@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<oor:component-data xmlns:oor="http://openoffice.org/2001/registry"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" oor:name="Addons" oor:package="org.openoffice.Office">
+	<node oor:name="AddonUI">
+		<node oor:name="OfficeMenuBar">
+			<node oor:name="org.openoffice.Office.addon.MergeODS" oor:op="replace">
+				<prop oor:name="Context" oor:type="xs:string">
+					<value>com.sun.star.sheet.SpreadsheetDocument</value>
+				</prop>
+				<prop oor:name="Title" oor:type="xs:string">
+					<value xml:lang="zh-tw">合併ODS檔案(~M)</value>
+				</prop>
+				<node oor:name="Submenu">
+					<node oor:name="M1001" oor:op="replace">
+						<prop oor:name="Context" oor:type="xs:string">
+							<value>com.sun.star.sheet.SpreadsheetDocument</value>
+						</prop>
+						<prop oor:name="Title" oor:type="xs:string">
+							<value xml:lang="en">ExportFile</value>
+							<value xml:lang="zh-TW">合併後匯出檔案(~E)</value>
+						</prop>
+						<prop oor:name="URL" oor:type="xs:string">
+							<value>vnd.sun.star.script:MergeODS.MergeODS.MainRun?language=Basic&amp;location=application</value>
+						</prop>
+						<prop oor:name="Target" oor:type="xs:string">
+							<value>_self</value>
+						</prop>
+                        <prop oor:name="ImageIdentifier" oor:type="xs:string">
+                            <value>%origin%/icons/01</value>
+                        </prop>
+					</node>
+                </node><!-- Submenu end -->
+			</node>
+		</node>
+	</node>
+</oor:component-data>

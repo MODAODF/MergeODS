@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="MergeODS" script:language="StarBasic">REM  *****  BASIC  *****
+
+function MainRun
+	&apos;
+	On Error Goto ErrorHandler
+	Dim oDoc as Object
+	Dim oSheet as Object
+	Dim oData as Variant
+	Dim oOrigData as Variant
+	&apos;Dim IdData as Variant
+	&apos;Dim OrigIdData as Variant
+	Dim oUrl as String
+	Dim oRange as Variant
+	&apos;Dim IdRange as Variant
+	Dim oCellType as Long
+	Dim oEndRow as Integer
+	Dim oCSV(2) As New com.sun.star.beans.PropertyValue
+
+	Const CodeId 	= 0 &apos;所屬機關代碼
+	Const Dpart  	= 2 &apos;部門
+	Const Id    	= 3 &apos;身分證號
+	Const Count		= 7 &apos;時數
+
+	Dim oArr as Object
+	GlobalScope.BasicLibraries.LoadLibrary(&quot;ScriptForge&quot;)
+	oArr = CreateScriptService(&quot;Array&quot;)
+
+	Dim fName() As Variant
+	Dim oFileExt as String
+	Dim oNameWithoutExt as String
+	GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+
+	fName = open_file()
+
+	&apos; init oOrigData, OrigIdData
+	oOrigData = Array()
+	oOrigData = oArr.Append(oOrigData,Array(&quot;所屬機關代碼&quot;,&quot;所屬機關名稱&quot;,&quot;部門&quot;,&quot;身分證號&quot;,&quot;姓名&quot;,&quot;職稱&quot;,&quot;官職等&quot;,&quot;時數&quot;))
+	&apos;OrigIdData = Array()
+	&apos;
+	Dim TotalFiles as Integer
+   	for f = 0 to Ubound(fName)
+   		&apos;
+   		oFileExt = GetFileNameExtension(fName(f))
+   		if oFileExt = &quot;csv&quot; then
+			oCSV(0).Name = &quot;FilterName&quot;
+			oCSV(0).Value = &quot;scalc: Text - txt - csv (StarCalc)&quot;
+			oCSV(1).Name = &quot;FilterOptions&quot;
+			oCSV(1).Value = &quot;44/32,34,76,1,1/2/2/3/2/4/2&quot;
+			oCSV(2).Name = &quot;Hidden&quot;
+			oCSV(2).Value = true
+		else
+			oCSV(0).Name = &quot;Hidden&quot;
+			oCSV(0).Value = true
+		end if
+		&apos;
+		oDoc = StarDesktop.loadComponentFromURL(fName(f), &quot;_default&quot;, 0, oCSV())
+		oSheet = oDoc.getSheets().getByIndex(0)
+		&apos;
+		&apos; 檢查檔案欄位是否正確
+		For a = 0 to 7
+			oCell = oSheet.getCellByPosition(a,0)
+			&apos;msgbox oCell.String
+			If oCell.String &lt;&gt; oOrigData(0)(a) Then
+				Dim url
+				url = ConvertFromUrl(GetFileNameWithoutExtension(fName(f), &quot;/&quot;))
+				msgbox &quot;檔案 : &quot; &amp; url &amp; &quot; &quot; &amp; &quot;含有不正確的資料欄位&quot;
+				Goto ErrorHandler
+			End if
+		Next a
+		&apos;
+		oEndRow = CellAddress(oDoc) + 1
+		TotalFiles = TotalFiles + oEndRow
+		oDoc.dispose
+	next f
+	&apos;
+	&apos;msgbox &quot;匯入資料中...&quot;
+	&apos; progress for import data
+	ProgressBar(TotalFiles, 0.2, &quot;匯入資料中....&quot;)
+	&apos;ProgressBar(TotalFiles, 20)
+	&apos;
+   	for i = 0 to Ubound(fName)
+   		&apos;
+   		oFileExt = GetFileNameExtension(fName(i))
+   		&apos;if oFileExt = &quot;csv&quot; then
+		&apos;	oCSV(0).Name = &quot;FilterName&quot;
+		&apos;	oCSV(0).Value = &quot;scalc: Text - txt - csv (StarCalc)&quot;
+		&apos;	oCSV(1).Name = &quot;FilterOptions&quot;
+		&apos;	oCSV(1).Value = &quot;44/32,34,76,1,1/2/2/3/2/4/2&quot;
+		&apos;	oCSV(2).Name = &quot;Hidden&quot;
+		&apos;	oCSV(2).Value = true
+		&apos;else
+		&apos;	oCSV(0).Name = &quot;Hidden&quot;
+		&apos;	oCSV(0).Value = true
+		&apos;end if
+		&apos;
+		oDoc = StarDesktop.loadComponentFromURL(fName(i), &quot;_default&quot;, 0, oCSV())
+		&apos;oNameWithoutExt = ConvertFromUrl(GetFileNameWithoutExtension(fName(i), &quot;/&quot;))
+		&apos;oSheet = oDoc.getSheets().getByName(oNameWithoutExt)
+		oSheet = oDoc.getSheets().getByIndex(0)
+		oEndRow = CellAddress(oDoc) + 1
+		oRange = oSheet.getCellRangeByPosition(CodeId, 1, Count, oEndRow - 1)
+		&apos;IdRange = oSheet.getCellRangeByPosition(Id, 1, Id, oEndRow - 1)
+
+		&apos;Get Data
+		oData = oRange.getDataArray()
+		&apos;IdData = IdRange.getDataArray()
+		&apos;追加
+		for k = 0 to Ubound(oData)
+			oOrigData = oArr.Append(oOrigData,oData(k))
+			&apos;OrigIdData = oArr.Append(OrigIdData,Join(IdData(k), &quot; : &quot;))
+		next k
+
+		&apos; close Doc
+		oDoc.dispose
+	next i
+	
+	&apos; progress for export data
+	ProgressBar(Ubound(oOrigData), 1.6,&quot;資料處理中請稍等...&quot;)
+	&apos;ProgressBar(Ubound(oOrigData), 150)
+	&apos;
+	&apos; 寫入到暫存檔案
+	Dim oNewDoc as Object
+	Dim oNewSheet as Object
+	Dim oPasteRange as Object
+	Dim Dummy()
+		oNewDoc = StarDesktop.loadComponentFromURL(&quot;private:factory/scalc&quot;, &quot;_blank&quot;, 0, oCSV())
+		oNewSheet = oNewDoc.getSheets().getByIndex(0)
+		oPasteRange = oNewSheet.getCellRangeByPosition(CodeId, 0, Count, Ubound(oOrigData))
+		oPasteRange.setDataArray(oOrigData)
+
+	&apos;msgbox &quot;資料處理中請稍等...&quot;
+    &apos;
+    &apos; 刪除無缺課欄位資料
+    COUNTIFS(oNewDoc, Ubound(fName)+1)
+    &apos;
+	&apos; 寫入到新欄位
+	Dim oNewDoc2 as Object
+	Dim oNewSheet2 as Object
+	Dim oPasteRange2 as Object
+	Dim Dummy2()
+		oNewDoc2 = StarDesktop.loadComponentFromURL(&quot;private:factory/scalc&quot;, &quot;_blank&quot;, 0, Dummy2())
+		oNewSheet2 = oNewDoc2.getSheets().getByIndex(0)
+		oEndRow = CellAddress(oNewDoc) + 1
+		&apos;msgbox oEndRow
+		oPasteRange = oNewSheet.getCellRangeByPosition(CodeId, 0, Count, oEndRow - 1)
+		oPasteRange2 = oNewSheet2.getCellRangeByPosition(CodeId, 0, Count, oEndRow - 1)
+		oPasteRange2.setDataArray(oPasteRange.getDataArray())
+	oNewDoc.dispose
+	&apos;
+	&apos; 處理不重複資料
+	AdvancedRangeFilter(oNewDoc2, oNewSheet2, oPasteRange2)
+	&apos;
+	&apos; 刪除之前欄位
+	RemoveCols(oNewSheet2)
+	&apos;
+	&apos; 開啟自動篩選
+	UnoSetAutoFlter(oNewDoc2, oNewSheet2)
+	&apos;
+	msgbox &quot;已匯出資料&quot;
+ErrorHandler:
+	exit function
+End function
+
+Sub UnoSetAutoFlter(oDoc as Object, oSheet as Object)
+	&apos;
+	Dim oCtrl as Object, oFrame as Object
+	Dim oDispatcher as Object
+	Dim oEndRow as Integer
+
+  		oCtrl = oDoc.getCurrentController()
+  		oFrame   = oCtrl.getFrame()
+		oDispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+  		&apos;
+		oEndRow = CellAddress(oDoc) + 1
+		oCtrl.select (oSheet.getCellRangeByPosition(0, 0, 7, oEndRow - 1))
+ 		&apos;設定 ON
+		oDispatcher.executeDispatch(oFrame, &quot;.uno:DataFilterAutoFilter&quot;, &quot;&quot;, 0, Array())
+End Sub
+
+Sub AdvancedRangeFilter(oDoc as Object, oSheet as Object, oRange as Variant)
+	&apos;
+	Dim oCritRange &apos;Range that contains the filter criteria.
+	Dim oDataRange &apos;Range that contains the data to filter.
+	Dim oFiltDesc &apos;Filter descriptor.
+	Dim oEndRow as Integer
+
+	REM Range that contains the filter criteria
+	oSheet = oDoc.getSheets().getByIndex(0)
+	oEndRow = CellAddress(oDoc) + 1
+	oCritRange = oRange
+
+	oSheet = oDoc.getSheets().getByIndex(0)
+	oDataRange = oRange
+	oFiltDesc = oCritRange.createFilterDescriptorByObject(oDataRange)
+
+	oFiltDesc.SkipDuplicates = True
+	oFiltDesc.ContainsHeader = True
+
+	oFiltDesc.CopyOutputData = True
+	oFiltDesc.SaveOutputPosition = True
+
+	Dim outputCell As New com.sun.star.table.CellAddress
+	outputCell.Sheet = 0
+	outputCell.Column = 8
+	outputCell.Row = 0
+	oFiltDesc.OutputPosition = outputCell
+	&apos;
+	oDataRange.filter(oFiltDesc)
+End Sub
+
+Sub RemoveCols(oSheet as Object)
+	&apos;
+	Dim oCols as Object
+	&apos;
+	oCols = oSheet.getColumns()
+	oCols.removeByIndex(0, 8)
+End Sub
+
+Function open_file() as Variant
+	&apos;
+	Dim file_dialog as Object
+	Dim status as Integer
+	Dim init_path as String
+	Dim ucb as object
+	Dim filterNames(3) as String
+	
+	filterNames(0) = &quot;*.*&quot;
+	filterNames(1) = &quot;*.png&quot;
+	filterNames(2) = &quot;*.jpg&quot;
+	
+	GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	file_dialog = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+	ucb = createUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	
+	AddFiltersToDialog(FilterNames(), file_dialog)
+	&apos;Set your initial path here!
+	init_path = ConvertToUrl(&quot;/usr&quot;)
+	
+	file_dialog.setMultiSelectionMode(True)
+	
+	If ucb.Exists(init_path) Then
+	   file_dialog.SetDisplayDirectory(init_path)
+	End If
+	
+	status = file_dialog.Execute()
+	If status = 1 Then
+	   file_path = file_dialog.getSelectedFiles()
+	   open_file = file_path
+	Else
+		MsgBox(&quot;未指定檔案&quot;, MB_OK + MB_ICONEXCLAMATION, &quot;warning!&quot;)
+	End If
+	file_dialog.Dispose()
+ 
+End Function
+
+
+&apos; 最終行取得
+Function CellAddress(oDoc as Object) as Long
+	Dim oSheet as Object
+	Dim oCursor as Object
+	Dim oCntrl as Object
+	Dim oFrame as Object
+	Dim oDispatcher as Object
+	Dim oProp(1) as new com.sun.star.beans.PropertyValue
+	Dim oShtEndRow as Long
+	Dim oEndRow as Long
+	Dim oDisp as String
+	&apos;
+	oSheet = oDoc.getSheets().getByIndex(0)
+	oCursor = oSheet.createCursor()
+	oShtEndRow  = oCursor.getRangeAddress().EndRow
+	&apos;
+	oCntrl = oDoc.getCurrentController()
+	oFrame = oCntrl.Frame
+	oDispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	&apos;
+	oProp(0).Name = &quot;ToPoint&quot;
+	oProp(0).Value = &quot;$A$&quot; &amp; oShtEndRow
+	oProp(1).Name = &quot;Sel&quot;
+	oProp(1).Value = false
+	oDispatcher.executeDispatch( oFrame, &quot;.uno:GoToCell&quot;, &quot;&quot;, 0, oProp())
+	&apos;
+	oProp(0).Name = &quot;By&quot;
+	oProp(0).Value = 1
+	oProp(1).Name = &quot;Sel&quot;
+	oProp(1).Value = false
+	oDispatcher.executeDispatch( oFrame, &quot;.uno:GoUpToStartOfData&quot;, &quot;&quot;, 0, oProp())
+	oEndRow = oCntrl.getSelection().getRangeAddress().EndRow
+	&apos;
+	oDisp = &quot;[ Address of End Row ]&quot; &amp; Chr$(10) &amp; &quot;End Row  = &quot; &amp; oEndRow
+
+	CellAddress = oEndRow
+End Function
+
+Sub COUNTIFS(oDoc as Object, classcount as Integer)
+    Dim oFunction as Variant
+    Dim oSheet as Object
+    Dim myRange
+    Dim TotalCount as Long
+    Dim oRows as Object
+    Dim oEndRow as Integer
+    Dim dyn_end as Integer
+    Dim str as String
+    Dim oCell
+    &apos;Dim countarray() as Variant
+    &apos;
+    &apos;Dim oArr as Object
+    &apos;GlobalScope.BasicLibraries.LoadLibrary(&quot;ScriptForge&quot;)
+    &apos;oArr = CreateScriptService(&quot;Array&quot;)
+    &apos;
+    oFunction = createUnoService(&quot;com.sun.star.sheet.FunctionAccess&quot;)
+    oSheet = oDoc.getSheets().getByIndex(0)
+    oEndRow = CellAddress(oDoc) + 1
+    myRange = oSheet.getCellRangeByPosition(3, 1, 3, oEndRow)
+    dyn_end = oEndRow - 1
+    &apos;ProgressBar(dyn_endj,150)
+    For i = 1 to dyn_end
+	    str = oSheet.getCellByPosition(3, i ).String
+	    &apos;msgbox str
+	    Dim aArgument(1) as Variant
+	    aArgument(0)=myRange
+	    aArgument(1)=str
+	    TotalCount = oFunction.callFunction(&quot;COUNTIFS&quot;, aArgument())
+	    &apos;countarray = oArr.Append(countarray,TotalCount)
+	  	If TotalCount &lt; classcount Then
+	  		oRows = oSheet.getRows()
+			oRows.removeByIndex(i,1) &apos;(第幾列,刪幾列)
+			i = i - 1
+			dyn_end = dyn_end - 1
+		Else
+			If TotalCount &gt; classcount Then
+				oCell = oSheet.getCellByPosition(8,i)
+				oCell.String = &quot;此筆資料異常~請確認!&quot;
+			End if
+	  	End if
+    Next i
+    &apos;COUNTIFS = countarray()
+End sub
+
+Sub ProgressBar(Max as Integer, Mag as Integer, Msg as String)
+&apos;Sub ProgressBar(Max as Long, WaitTime as Integer)
+	&apos;
+	Dim oProgressBar as Object, oProgressBarModel As Object, oDialog as Object
+	Dim ProgressValue As Long
+	Dim oSheet as Object
+	Dim oCell as Object
+    &apos;Dim ProgressValueMin as Integer
+    &apos;Dim ProgressValueMax as Integer
+	REM Dialog1 contains progress bar ProgressBar1 saved in standard library
+	oDialog = LoadModelessDialog(&quot;MergeODS&quot;, &quot;ProgressBarDialog&quot;)
+	oDialog.getControl(&quot;Label1&quot;).Text = Msg
+	oDialog.visible = true
+	&apos;DialogLibraries.loadLibrary(&quot;Standard&quot;)
+	&apos;oDialog = CreateUnoDialog(DialogLibraries.MergeODS.ProgressBarDialog)
+	REM progress bar settings
+
+    &apos;ProgressValueMin = InputBox (&quot;Please enter a starting value:&quot;,&quot;Input Required&quot;)
+    &apos;ProgressValueMax = InputBox (&quot;Please enter a ending value:&quot;,&quot;Input Required&quot;)
+    &apos;ProgressValueMax = Max + Int(Max * 0.2)
+    ProgressValueMax = Max - Int(Max * 0.2)
+
+	Const ProgressValueMin = 0
+	&apos;Const ProgressValueMax = Max
+	Const ProgressStep = 4
+	REM set minimum and maximum progress value
+	oProgressBarModel = oDialog.getModel().getByName( &quot;ProgressBar1&quot; )
+	oProgressBarModel.setPropertyValue( &quot;ProgressValueMin&quot;, ProgressValueMin)
+	oProgressBarModel.setPropertyValue( &quot;ProgressValueMax&quot;, ProgressValueMax)
+	REM show progress bar
+	&apos;oDialog.setVisible( True )
+	&apos;oDialog.GetControl(&quot;Label1&quot;).Text = Msg
+	REM increase progress value every second
+
+    &apos;oSheet=thiscomponent.getcurrentcontroller.activesheet
+    &apos;oCell=oSheet.getCellByPosition(150,1)
+
+	For ProgressValue = ProgressValueMin To ProgressValueMax Step ProgressStep
+		oProgressBarModel.setPropertyValue( &quot;ProgressValue&quot;, ProgressValue )
+	REM This is where you perform whatever action you are wanting
+        &apos;oCell.SetString(ProgressValue)
+		Wait 100 * Mag
+	Next ProgressValue
+    &apos;oCell.SetString(&quot;Done&quot;)
+    &apos;oDialog.setVisible( False )
+    oDialog.visible = false
+End Sub
+</script:module>

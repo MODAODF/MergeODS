@@ -2,22 +2,20 @@
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="MergeODS" script:language="StarBasic">REM  *****  BASIC  *****
 
-function MainRun
+Function MainRun
 	&apos;
 	On Error Goto ErrorHandler
 	Dim oDoc as Object
 	Dim oSheet as Object
 	Dim oData as Variant
 	Dim oOrigData as Variant
-	&apos;Dim IdData as Variant
-	&apos;Dim OrigIdData as Variant
 	Dim oUrl as String
 	Dim oRange as Variant
-	&apos;Dim IdRange as Variant
 	Dim oCellType as Long
 	Dim oEndRow as Integer
 	Dim oCSV(2) As New com.sun.star.beans.PropertyValue
-
+	&apos;
+	&apos; 欄位編號
 	Const CODEID 	= 0 &apos;所屬機關代碼
 	Const DPART  	= 2 &apos;部門
 	Const ID    	= 3 &apos;身分證號
@@ -38,23 +36,22 @@ function MainRun
 	&apos; init oOrigData, OrigIdData
 	oOrigData = Array()
 	oOrigData = oArr.Append(oOrigData,Array(&quot;所屬機關代碼&quot;,&quot;所屬機關名稱&quot;,&quot;部門&quot;,&quot;身分證號&quot;,&quot;姓名&quot;,&quot;職稱&quot;,&quot;官職等&quot;,&quot;時數&quot;))
-	&apos;OrigIdData = Array()
 	&apos;
 	Dim TotalFiles as Integer
-   	for f = 0 to Ubound(fName)
+   	For f = 0 to Ubound(fName)
    		&apos;
    		oFileExt = GetFileNameExtension(fName(f))
-   		if oFileExt = &quot;csv&quot; then
+   		If oFileExt = &quot;csv&quot; Then
 			oCSV(0).Name = &quot;FilterName&quot;
 			oCSV(0).Value = &quot;scalc: Text - txt - csv (StarCalc)&quot;
 			oCSV(1).Name = &quot;FilterOptions&quot;
 			oCSV(1).Value = &quot;44/32,34,76,1,1/2/2/3/2/4/2&quot;
 			oCSV(2).Name = &quot;Hidden&quot;
 			oCSV(2).Value = true
-		else
+		Else
 			oCSV(0).Name = &quot;Hidden&quot;
 			oCSV(0).Value = true
-		end if
+		End if
 		&apos;
 		oDoc = StarDesktop.loadComponentFromURL(fName(f), &quot;_default&quot;, 0, oCSV())
 		oSheet = oDoc.getSheets().getByIndex(0)
@@ -74,47 +71,30 @@ function MainRun
 		oEndRow = CellAddress(oDoc) + 1
 		TotalFiles = TotalFiles + oEndRow
 		oDoc.dispose
-	next f
+	Next f
 	&apos;
 	&apos;msgbox &quot;匯入資料中...&quot;
 	&apos; progress for import data
 	ProgressBar(TotalFiles, 0.2, &quot;匯入資料中....&quot;)
 	&apos;
-   	for i = 0 to Ubound(fName)
-   		&apos;
+   	For i = 0 to Ubound(fName)
    		oFileExt = GetFileNameExtension(fName(i))
-   		&apos;if oFileExt = &quot;csv&quot; then
-		&apos;	oCSV(0).Name = &quot;FilterName&quot;
-		&apos;	oCSV(0).Value = &quot;scalc: Text - txt - csv (StarCalc)&quot;
-		&apos;	oCSV(1).Name = &quot;FilterOptions&quot;
-		&apos;	oCSV(1).Value = &quot;44/32,34,76,1,1/2/2/3/2/4/2&quot;
-		&apos;	oCSV(2).Name = &quot;Hidden&quot;
-		&apos;	oCSV(2).Value = true
-		&apos;else
-		&apos;	oCSV(0).Name = &quot;Hidden&quot;
-		&apos;	oCSV(0).Value = true
-		&apos;end if
-		&apos;
+		&apos; oCSV() 已存在不需要再定義
 		oDoc = StarDesktop.loadComponentFromURL(fName(i), &quot;_default&quot;, 0, oCSV())
-		&apos;oNameWithoutExt = ConvertFromUrl(GetFileNameWithoutExtension(fName(i), &quot;/&quot;))
-		&apos;oSheet = oDoc.getSheets().getByName(oNameWithoutExt)
 		oSheet = oDoc.getSheets().getByIndex(0)
 		oEndRow = CellAddress(oDoc) + 1
 		oRange = oSheet.getCellRangeByPosition(CODEID, 1, HOUR, oEndRow - 1)
-		&apos;IdRange = oSheet.getCellRangeByPosition(Id, 1, Id, oEndRow - 1)
-
+		&apos;
 		&apos;Get Data
 		oData = oRange.getDataArray()
-		&apos;IdData = IdRange.getDataArray()
 		&apos;追加
-		for k = 0 to Ubound(oData)
+		For k = 0 To Ubound(oData)
 			oOrigData = oArr.Append(oOrigData,oData(k))
-			&apos;OrigIdData = oArr.Append(OrigIdData,Join(IdData(k), &quot; : &quot;))
-		next k
-
+		Next k
+		&apos;
 		&apos; close Doc
 		oDoc.dispose
-	next i
+	Next i
 	
 	&apos; progress for export data
 	ProgressBar(Ubound(oOrigData), 0.2,&quot;資料處理中請稍等...&quot;)
@@ -127,54 +107,53 @@ function MainRun
 		&apos;oNewDoc = StarDesktop.loadComponentFromURL(&quot;private:factory/scalc&quot;, &quot;_blank&quot;, 0, Dummy())
 		oNewDoc = StarDesktop.loadComponentFromURL(&quot;private:factory/scalc&quot;, &quot;_blank&quot;, 0, oCSV())
 		oNewSheet = oNewDoc.getSheets().getByIndex(0)
+		oNewSheet.Name=&quot;Alldata&quot;
 		oPasteRange = oNewSheet.getCellRangeByPosition(CODEID, 0, HOUR, Ubound(oOrigData))
 		oPasteRange.setDataArray(oOrigData)
 	&apos;
-	&apos; add count
-	AddCounts(oNewDoc)
-	oPasteRange = oNewSheet.getCellRangeByPosition(CODEID, 0, COUNT, Ubound(oOrigData))
-	&apos;
 	&apos; add sheet for pilottable
-	InsertSheet(oNewDoc)
-
-	&apos;msgbox &quot;資料處理中請稍等...&quot;
+	InsertSheet(oNewDoc, &quot;Pilot&quot;)
 	&apos;
-	&apos; create data pilottable
+	&apos; create data pilottable (以身分字號和姓名為最前面欄位基準+數計數身分字號)
 	oCreateDataPilotTable(oNewDoc, oPasteRange)
-	&apos;
-	&apos; 處理不重複資料
-	SkipDuplicatesFilter(oNewDoc, oNewSheet, oPasteRange)
-	&apos;
-	&apos; 刪除之前欄位
-	RemoveCols(oNewSheet)
-	&apos;
-	&apos; 做部門,身分字號,姓名升序排列
 	oEndRow = CellAddress(oNewDoc) + 1
+	&apos;
+	&apos; add sheet for pilottable2
+	InsertSheet(oNewDoc, &quot;Pilot2&quot;)
+	&apos;
+	&apos; create data pilottable2 (以身分字號為最前面欄位基準+總和時數)
+	oCreateDataPilotTable2(oNewDoc, oPasteRange)
+	&apos;
+	&apos; remove Alldata sheet
+	RemoveSheet(oNewDoc, &quot;Alldata&quot;)
+	&apos;
+	&apos; copy 總和時數 to sheet Pilot
+	oCopyRange(oNewDoc, oEndRow, 1)
+	&apos;
+	&apos; remove Pilot2 sheet
+	RemoveSheet(oNewDoc, &quot;Pilot2&quot;)
+	&apos;
+	&apos; filter 排除有上課的學生, (Ubound(fName)+1 = 課的總數)
 	oPasteRange = oNewSheet.getCellRangeByPosition(CODEID, 0, COUNT, oEndRow)
-	SortByQuizScores(oNewDoc, oPasteRange)
+	CountifsFilter(oNewDoc, oNewSheet, oPasteRange, Ubound(fName)+1)
 	&apos;
-	&apos; 將pilottable的計數貼到 sheet 0
-	Dim pSheet as Object
-	Dim pRange as Object
-	pSheet = oNewDoc.getSheets().getByIndex(1)
-	pRange = pSheet.getCellRangeByPosition(5, 0, 5, oEndRow)
-	oPasteRange = oNewSheet.getCellRangeByPosition(COUNT, 0, COUNT, oEndRow)
-	oPasteRange.setDataArray(pRange.getDataArray())
+	&apos; 刪除 pilottable
+	oRemoveDataPilot(oNewSheet)
 	&apos;
-	&apos; 用標準篩選 + 條件刪除小於總缺課時數的人
-	oPasteRange = oNewSheet.getCellRangeByPosition(CODEID, 0, COUNT+1, oEndRow)
-	Dim totalclass as Integer
-	totalclass = Ubound(fName) + 1
-	AdvancedRangeFilter(oNewDoc, oNewSheet, oPasteRange, totalclass)
+	&apos; 刪除之前欄位 (之前pilottable的空白欄位)
+	RemoveCols(oNewSheet,0,9)
 	&apos;
-	&apos; 刪除之前欄位
-	RemoveCols(oNewSheet)
+	&apos; 增加2個空白欄位在職稱欄位前
+	InsertCellRight(oNewDoc, oNewSheet, oEndRow)
 	&apos;
-	&apos; cleanclear
-	cleanclear(oNewSheet)
+	&apos; copy 身分字號和姓名欄位至職稱欄位前
+	oCopyRange(oNewDoc, oEndRow, 0)
 	&apos;
-	&apos; remove pilot sheet
-	RemoveSheet(oNewDoc)
+	&apos; 刪除身分字號和姓名欄位(以copy到職稱欄位前)
+	RemoveCols(oNewSheet,0,2)
+	&apos;
+	&apos; 刪除身分字號計數欄位
+	RemoveCols(oNewSheet,7,1)
 	&apos;
 	&apos; 寫入到新檔案
 	Dim oNewDoc2 as Object
@@ -194,8 +173,8 @@ function MainRun
 	&apos;
 	msgbox &quot;已匯出資料&quot;
 ErrorHandler:
-	exit function
-End function
+	Exit Function
+End Function
 
 Sub UnoSetAutoFlter(oDoc as Object, oSheet as Object)
 	&apos;
@@ -213,52 +192,27 @@ Sub UnoSetAutoFlter(oDoc as Object, oSheet as Object)
 		oDispatcher.executeDispatch(oFrame, &quot;.uno:DataFilterAutoFilter&quot;, &quot;&quot;, 0, Array())
 End Sub
 
-Sub SkipDuplicatesFilter(oDoc as Object, oSheet as Object, oRange as Variant)
+Sub CountifsFilter(oDoc as Object, oSheet as Object, oRange as Variant, classnum as Integer)
 	&apos;
 	Dim oCritRange &apos;Range that contains the filter criteria.
 	Dim oDataRange &apos;Range that contains the data to filter.
 	Dim oFiltDesc &apos;Filter descriptor.
 	Dim oEndRow as Integer
+	Dim oFields(1) As New com.sun.star.sheet.TableFilterField
 
-	REM Range that contains the filter criteria
-	oSheet = oDoc.getSheets().getByIndex(0)
-	oEndRow = CellAddress(oDoc) + 1
-	oCritRange = oRange
-
-	oSheet = oDoc.getSheets().getByIndex(0)
-	oDataRange = oRange
-	oFiltDesc = oCritRange.createFilterDescriptorByObject(oDataRange)
-
-	oFiltDesc.SkipDuplicates = True
-	oFiltDesc.ContainsHeader = True
-
-	oFiltDesc.CopyOutputData = True
-	oFiltDesc.SaveOutputPosition = True
-
-	Dim outputCell As New com.sun.star.table.CellAddress
-	outputCell.Sheet = 0
-	outputCell.Column = 9
-	outputCell.Row = 0
-	oFiltDesc.OutputPosition = outputCell
-	&apos;
-	oDataRange.filter(oFiltDesc)
-End Sub
-
-Sub AdvancedRangeFilter(oDoc as Object, oSheet as Object, oRange as Variant, classnum as Integer)
-	&apos;
-	Dim oCritRange &apos;Range that contains the filter criteria.
-	Dim oDataRange &apos;Range that contains the data to filter.
-	Dim oFiltDesc &apos;Filter descriptor.
-	Dim oEndRow as Integer
-	Dim oFields(0) As New com.sun.star.sheet.TableFilterField
-
-	REM Setup a field to view cells with content that
-	REM start with the letter b.
 	With oFields(0)
-		.Field = 8 						&apos; Filter column I.
+		.Field = 7 						&apos; Filter column I.
 		.IsNumeric = True 				&apos; Use a number.
 		.NumericValue = classnum 		&apos; Everything &gt;= classnum
-		.Operator = com.sun.star.sheet.FilterOperator.GREATER_EQUAL
+		.Operator = com.sun.star.sheet.FilterOperator.EQUAL
+	End With
+
+	With oFields(1)
+		.Connection = com.sun.star.sheet.FilterConnection.OR
+		.Field = 8 						&apos; Filter column I.
+		.IsNumeric = True 				&apos; Use a number.
+		.NumericValue = 0 				&apos; Everything &gt;= classnum
+		.Operator = com.sun.star.sheet.FilterOperator.GREATER
 	End With
 
 	REM Range that contains the filter criteria
@@ -286,12 +240,12 @@ Sub AdvancedRangeFilter(oDoc as Object, oSheet as Object, oRange as Variant, cla
 	oDataRange.filter(oFiltDesc)
 End Sub
 
-Sub RemoveCols(oSheet as Object)
+Sub RemoveCols(oSheet as Object, startcol as Integer, endcol as Integer)
 	&apos;
 	Dim oCols as Object
 	&apos;
 	oCols = oSheet.getColumns()
-	oCols.removeByIndex(0, 9)
+	oCols.removeByIndex(startcol, endcol)
 End Sub
 
 Function open_file() as Variant
@@ -418,47 +372,6 @@ Sub ProgressBar(Max as Integer, Mag as Integer, Msg as String)
     oDialog.visible = false
 End Sub
 
-Sub SortByQuizScores(oDoc as Object, oRange as Object)
-	Dim oSheet
-	&apos;Dim oRange
-	Dim oSortFields(2) as new com.sun.star.util.SortField
-	Dim oSortDesc(0) as new com.sun.star.beans.PropertyValue
-	oSheet = oDoc.Sheets(0)
-	REM Set the range on which to sort
-	&apos;oRange = oSheet.getCellRangeByName(&quot;A1:H530&quot;)
-	REM Sort by the Quiz #1 field in the range
-	oSortFields(0).Field = 2
-	oSortFields(0).SortAscending = True
-	oSortFields(0).FieldType = com.sun.star.util.SortFieldType.ALPHANUMERIC
-	REM Sort by the Quiz #2 field in the range
-	oSortFields(1).Field = 3
-	oSortFields(1).SortAscending = True
-	oSortFields(1).FieldType = com.sun.star.util.SortFieldType.ALPHANUMERIC
-	REM Sort by the Quiz #2 field in the range
-	oSortFields(2).Field = 4
-	oSortFields(2).SortAscending = True
-	oSortFields(2).FieldType = com.sun.star.util.SortFieldType.ALPHANUMERIC
-	REM Set the sort fields to use
-	oSortDesc(0).Name = &quot;SortFields&quot;
-	oSortDesc(0).Value = oSortFields()
-	REM Now sort the range!
-	oRange.Sort(oSortDesc())
-End Sub
-
-sub AddCounts(oDoc as Object)
-	&apos;
-	Dim oSheet as Object
-	Dim oEndRow as Integer
-	&apos;
-	oSheet = oDoc.getSheets().getByIndex(0)
-	oEndRow = CellAddress(oDoc)
-	oSheet.getCellByPosition(8,0).String = &quot;Count&quot;
-	&apos;
-	For i = 1 To oEndRow
-		oSheet.getCellByPosition(8,i).Value = 1
-	Next i
-end sub
-
 Sub oCreateDataPilotTable(oDoc as Object, oRange as Object)
 	Dim oSheet
 	&apos;Dim oRange
@@ -490,6 +403,12 @@ Sub oCreateDataPilotTable(oDoc as Object, oRange as Object)
 	&apos; Step4	Set the fileds
 	oAllFields = oTDescriptor.getDataPilotFields()
 	&apos;
+	&apos;Define to be the Column3 as a row item
+	oField = oAllFields.getByIndex(3)
+	oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.ROW
+	&apos;Define to be the Column4 as a row item
+	oField = oAllFields.getByIndex(4)
+	oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.ROW
 	&apos;Define to be the Column0 as a row item
 	oField = oAllFields.getByIndex(0)
 	oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.ROW
@@ -499,54 +418,138 @@ Sub oCreateDataPilotTable(oDoc as Object, oRange as Object)
 	&apos;Define to be the Column2 as a row item
 	oField = oAllFields.getByIndex(2)
 	oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.ROW
+	&apos;Define to be the Column5 as a row item
+	oField = oAllFields.getByIndex(5)
+	oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.ROW
+	&apos;Define to be the Column6 as a row item
+	oField = oAllFields.getByIndex(6)
+	oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.ROW
+	&apos;Define to be Created a count in the data for the Column3
+	oField = oAllFields.getByIndex(3)
+	oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.DATA
+	oField.Function = com.sun.star.sheet.GeneralFunction.COUNT
+	&apos;Define to be Created a sum in the data for the Column7
+	&apos;oField = oAllFields.getByIndex(7)
+	&apos;oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.DATA
+	&apos;oField.Function = com.sun.star.sheet.GeneralFunction.SUM
+	&apos;oField = oAllFields.getByIndex(3)
+	&apos;oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.PAGE
+	&apos;
+	oTables.insertNewByName(&quot;MyFirstDataPilot&quot;, oCellAddress, oTDescriptor)
+End Sub
+
+Sub oCreateDataPilotTable2(oDoc as Object, oRange as Object)
+	Dim oSheet
+	&apos;Dim oRange
+	Dim oRangeAddress
+	Dim oTables
+	Dim oTDescriptor
+	Dim oAllFields
+	Dim oField
+	Dim oCellAddress as new com.sun.star.table.CellAddress
+	&apos;
+	Randomize(37)
+	&apos;oRange = oDataPilotSource(&quot;Pilot&quot;)
+	&apos;
+	oRangeAddress = oRange.getRangeAddress()
+	oCellAddress.Sheet = 2
+	oCellAddress.Column = 0
+	oCellAddress.Row = 0
+	&apos;	
+	oSheet = oDoc.Sheets.getByName(&quot;Pilot2&quot;)
+	oTables = oSheet.getDataPilotTables()
+	&apos; Step1	Create the descriptor
+	oTDescriptor = oTables.createDataPilotDescriptor()
+	&apos; Step2	Set the Source Range
+	oTDescriptor.setSourceRange(oRangeAddress)
+	&apos; Step3 Set Attributes
+	oTDescriptor.ColumnGrand = False
+	oTDescriptor.RowGrand = False
+	oTDescriptor.ShowFilterButton = False
+	&apos; Step4	Set the fileds
+	oAllFields = oTDescriptor.getDataPilotFields()
+	&apos;
 	&apos;Define to be the Column3 as a row item
 	oField = oAllFields.getByIndex(3)
 	oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.ROW
-	&apos;Define to be the Column3 as a row item
-	oField = oAllFields.getByIndex(4)
+	&apos;Define to be the Column0 as a row item
+	oField = oAllFields.getByIndex(2)
 	oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.ROW
-	&apos;Define to be Created a sum in the data for the Column3
-	oField = oAllFields.getByIndex(8)
+	&apos;
+	&apos;Define to be Created a sum in the data for the Column7
+	oField = oAllFields.getByIndex(7)
 	oField.Orientation = com.sun.star.sheet.DataPilotFieldOrientation.DATA
 	oField.Function = com.sun.star.sheet.GeneralFunction.SUM
 	&apos;
-	oTables.insertNewByName(&quot;MyFirstDataPilot&quot;, oCellAddress, oTDescriptor)
-		
+	oTables.insertNewByName(&quot;MyFirstDataPilot2&quot;, oCellAddress, oTDescriptor)
 End Sub
 
-Sub InsertSheet(oDoc as Object)
+Sub InsertSheet(oDoc as Object, SheetName as String)
 	Dim oCtrl as Object, oFrame as Object
 	Dim oDispatcher as Object
-	Dim oProp(1) as new com.sun.star.beans.PropertyValue
+	Dim oProp(1) as New com.sun.star.beans.PropertyValue
 		&apos;oDoc = ThisComponent
   		oCtrl = oDoc.getCurrentController()
   		oFrame = oCtrl.getFrame()
   		oDispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
   			oProp(0).Name = &quot;Name&quot;
-  			oProp(0).Value = &quot;Pilot&quot;
+  			oProp(0).Value = SheetName
   			oProp(1).Name = &quot;Index&quot;
   			oProp(1).Value = 32767
   		oDispatcher.executeDispatch( oFrame, &quot;.uno:Insert&quot;, &quot;&quot;, 0, oProp())
   		&apos;msgbox &quot;Success&quot;
 End Sub
 
-Sub cleanclear(oSheet as Object)
-	&apos;
-	Dim oCols as Object
-	&apos;
-	oCols = oSheet.getColumns()
-	oCols.removeByIndex(8, 9)
-End Sub
-
-Sub RemoveSheet(oDoc as Object)
-	Dim oSheets As Object
-	Dim oSheet As Object
-	Dim nReturnCode As Integer
-	Dim sSheetName As String
-   		sSheetName = &quot;Pilot&quot;
+Sub RemoveSheet(oDoc as Object, SheetName as String)
+	Dim oSheets as Object
+	&apos;Dim oSheet as Object
+	Dim nReturnCode as Integer
+	&apos;Dim sSheetName as String
+   		&apos;sSheetName = SheetName
    		oSheets = oDoc.getSheets()
-   		If oSheets.hasByName( sSheetName ) Then
-     		oSheets.removeByName( sSheetName )
+   		If oSheets.hasByName( SheetName ) Then
+     		oSheets.removeByName( SheetName )
    		End If
 End Sub
+
+Sub InsertCellRight(Doc as Object, oSheet as Object, EndRow as Integer)
+	&apos;
+    Dim CellRangeAddress as New com.sun.star.table.CellRangeAddress
+	&apos;
+   	CellRangeAddress.Sheet = 0
+   	CellRangeAddress.StartColumn = 5
+   	CellRangeAddress.StartRow = 0
+   	CellRangeAddress.EndColumn = 6
+   	CellRangeAddress.EndRow = EndRow
+   	oSheet.insertCells(CellRangeAddress, com.sun.star.sheet.CellInsertMode.RIGHT)
+   	&apos;msgbox &quot;Success&quot;
+End Sub
+
+Sub oCopyRange(oDoc as Object, EndRow as Integer, IsHours as Boolean)
+	&apos;
+	Dim oRangeAddress
+	Dim oCellAddress
+	Dim oSheet1 as Object, oSheet2 as Object
+	&apos;
+	If (IsHours) Then
+		oSheet1 = oDoc.getSheets().getByIndex(0)
+		oSheet2 = oDoc.getSheets().getByIndex(1)
+		oRangeAddress = oSheet2.getCellRangeByPosition(2, 0, 2, EndRow).getRangeAddress()
+		oCellAddress = oSheet1.getCellByPosition(8,0).getCellAddress()
+		oSheet1.moveRange(oCellAddress, oRangeAddress)
+	Else
+		oSheet1 = oDoc.getSheets().getByIndex(0)
+		oRangeAddress = oSheet1.getCellRangeByPosition(0, 0, 1, EndRow).getRangeAddress()
+		oCellAddress = oSheet1.getCellByPosition(5,0).getCellAddress()
+		oSheet1.moveRange(oCellAddress, oRangeAddress)
+	End If
+End Sub
+
+Sub oRemoveDataPilot(oSheet as Object)
+	&apos;Dim oSheet
+		&apos;oSheet = ThisComponent.Sheets.getByName(&quot;Pilot&quot;)
+		oTables = oSheet.getDataPilotTables()
+		oRDescriptor = oTables.removeByName(&quot;MyFirstDataPilot&quot;)
+End Sub
+
 </script:module>

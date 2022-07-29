@@ -5,7 +5,7 @@
  xmlns:xlink="http://www.w3.org/1999/xlink">
 	<identifier value="tw.ossii.MergeODS"/>
 	
-	<version value="1.0.1"/>
+	<version value="1.0.2"/>
  
 	<display-name>
 		<name lang="en">MergeODS</name>

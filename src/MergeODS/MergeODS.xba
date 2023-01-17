@@ -155,6 +155,9 @@ Function MainRun
 	&apos; 刪除身分字號計數欄位
 	RemoveCols(oNewSheet,7,1)
 	&apos;
+	&apos; 寫入時數大於0備註
+	WriteNotes(oNewSheet, oEndRow)
+	&apos;
 	&apos; 寫入到新檔案
 	Dim oNewDoc2 as Object
 	Dim oNewSheet2 as Object
@@ -176,6 +179,23 @@ ErrorHandler:
 	Exit Function
 End Function
 
+Sub WriteNotes(oSheet as Object, EndRow as Integer)
+	&apos;
+	Dim oCell as Object
+	&apos;
+	&apos; add 備註 column
+	oCell = oSheet.getCellByPosition(8,0)
+	oCell.String = &quot;備註&quot;
+	&apos;
+	For i = 1 To EndRow
+		oCell = oSheet.getCellByPosition(7,i)
+		If (oCell.Value &gt; 0) Then
+			oCell = oSheet.getCellByPosition(8,i)
+			oCell.String = &quot;未有上課紀錄~但有上課時數&quot;
+		End If
+	Next i	
+End Sub
+
 Sub UnoSetAutoFlter(oDoc as Object, oSheet as Object)
 	&apos;
 	Dim oCtrl as Object, oFrame as Object
@@ -187,7 +207,7 @@ Sub UnoSetAutoFlter(oDoc as Object, oSheet as Object)
 		oDispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
   		&apos;
 		oEndRow = CellAddress(oDoc) + 1
-		oCtrl.select (oSheet.getCellRangeByPosition(0, 0, 7, oEndRow - 1))
+		oCtrl.select (oSheet.getCellRangeByPosition(0, 0, 8, oEndRow - 1))
  		&apos;設定 ON
 		oDispatcher.executeDispatch(oFrame, &quot;.uno:DataFilterAutoFilter&quot;, &quot;&quot;, 0, Array())
 End Sub

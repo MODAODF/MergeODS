@@ -5,11 +5,11 @@
  xmlns:xlink="http://www.w3.org/1999/xlink">
 	<identifier value="tw.ossii.MergeODS"/>
 	
-	<version value="1.0.2"/>
+	<version value="1.0.3"/>
  
 	<display-name>
 		<name lang="en">MergeODS</name>
-		<name lang="zh-TW">合併ODS檔案</name>
+		<name lang="zh-TW">ODF課程統計工具</name>
 	</display-name>
     
     <extension-description>
